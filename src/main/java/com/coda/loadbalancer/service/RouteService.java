@@ -2,16 +2,13 @@ package com.coda.loadbalancer.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import com.coda.loadbalancer.util.GlobalRouteUtil;
@@ -29,15 +26,16 @@ public class RouteService {
 
 
 
-    public Map<?, ?> loadBalance(Map<String, Object> payload) throws Exception{
+    public Map<?,?> route(Map<String, Object> payload) throws Exception{
         String host = globalRouteUtil.getActivePod();
         if (StringUtils.isEmpty(host)){
             log.error("Error: No active pod found! ");
             throw new RuntimeException("No active pod found");
         }
 
+        log.info("Active host: " + host);
         try{
-            return sendRequest(payload);
+            return sendRequest(payload, host);
         } catch(HttpServerErrorException e) {
             globalRouteUtil.tempRemoveInactiveHost(host);
             throw e;
@@ -52,9 +50,15 @@ public class RouteService {
 
 
     @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
-    private Map<?,?> sendRequest(Map<String, Object> payload) throws Exception {
-        String url = globalRouteUtil.getActivePod() + "/echo";
-        return restTemplate.postForObject(url, payload, Map.class);
+    private Map<?,?> sendRequest(Map<String, Object> payload, String host) throws Exception {
+        String url = host + "/v1/echo";
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, payload, Map.class);
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("Error occurred while sending request " + e.getCause());
+            throw e;
+        }
     }
 
     @Recover

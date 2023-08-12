@@ -1,6 +1,7 @@
 package com.coda.loadbalancer.controller;
 
 
+import com.coda.loadbalancer.dto.HttpRouteResponse;
 import com.coda.loadbalancer.service.RouteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,14 +26,14 @@ public class RouteController {
     private RouteService routeService;
 
 
-    @PostMapping(value = "/reroute", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> reroute(@RequestBody(required = true) Map<String, Object> payload) {
-        log.info("echo request " + payload.toString());
+    @PostMapping(value = "/route", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> route(@RequestBody(required = true) Map<String, Object> payload) {
+        log.debug("echo request " + payload.toString());
         try {
-            Map<?, ?> responseBody = routeService.loadBalance(payload);
+            Map<?, ?> responseBody = routeService.route(payload);
             return ResponseEntity.status(HttpStatus.OK).body(responseBody);
         } catch (Exception e) {
-
+            e.printStackTrace();
             return ResponseEntity.internalServerError().body(e);
         }
     }

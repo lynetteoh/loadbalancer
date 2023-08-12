@@ -4,8 +4,8 @@ import com.coda.loadbalancer.util.GlobalRouteUtil;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -18,7 +18,7 @@ import java.util.Map;
 
 @Component
 @Slf4j
-//@dependsOn({"globalRouteUtil"})
+@DependsOn({"globalRouteUtil"})
 public class HealthCheck {
 
     @Autowired
@@ -44,17 +44,20 @@ public class HealthCheck {
             Map<String, Boolean> activePod = new HashMap<>(GlobalRouteUtil.activePod);
             List<String> inactivePod = new ArrayList<>();
             for(String url: activePod.keySet()){
-                if (activePod.get(url)) {
-                    ResponseEntity<Object> responseEntity =restTemplate.getForEntity(url, Object.class);
+                try {
+                    ResponseEntity<Object> responseEntity=restTemplate.getForEntity(url + "/actuator/health", Object.class);
                     if (!responseEntity.getStatusCode().equals(HttpStatus.OK)) {
                         inactivePod.add(url);
                     }
+                } catch (Exception e) {
+                    inactivePod.add(url);
                 }
             }
 
             for (String podUrl: inactivePod) {
                     globalRouteUtil.removeInactiveHost(podUrl);
             }
+            log.debug("Inactive pods : " +  inactivePod.toString());
         } catch (Exception e) {
             log.error("Error while doing health check: ", e);
         }
