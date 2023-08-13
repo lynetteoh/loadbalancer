@@ -2,6 +2,8 @@ package com.coda.loadbalancer.controller;
 
 
 import com.coda.loadbalancer.service.RouteService;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -32,6 +34,7 @@ public class RouteController {
     private RouteService routeService;
 
 
+    @Operation(summary="send request to different pod")
     @PostMapping(value = "/route", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> route(@RequestBody(required = true) Map<String, Object> payload) throws Exception{
         log.debug("echo request " + payload.toString());
@@ -45,6 +48,8 @@ public class RouteController {
         }
     }
 
+
+    @Operation(summary="to register instances")
     @GetMapping(value = "/registerPod")
     public ResponseEntity<Object> registerPod(@RequestParam(required = true) String hostName, @RequestParam(required = true) String port) throws Exception{
         try{
@@ -56,40 +61,47 @@ public class RouteController {
         }
     }
 
+    @Operation(summary="for testing purposes only, to send huge load of requests to a target server")
     @GetMapping(value = "/loadTest")
     public ResponseEntity<Object> loadTest (@RequestParam(required = true) int totalRequest, @RequestParam(required = true) int totalConcurrent, @RequestParam(required = true) String url ) {
         log.info("Starting load test");
-        Map<String, Object> error = new HashMap<>();
-        ExecutorService executor = Executors.newFixedThreadPool(totalConcurrent);
-        List<Future<Map<?,?>>> futureList = new ArrayList<>();
         if (totalRequest < totalConcurrent) {
             Map<String, Object> errorDetails = constructErrorObject(HttpStatus.INTERNAL_SERVER_ERROR, "totalRequest cannot be less than totalConcurrent");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorDetails);
         }
-        int rounds = totalRequest / totalConcurrent;
-        for (int j= 0; j < rounds ; j++) {
-            for(int i=0; i<totalConcurrent; i++) {
-                Map<String, Object> payload = new HashMap<>();
-                payload.put("game", "Mobile Legends");
-                payload.put("gamerID", "GYUTDTE");
-                payload.put("points", 20);
-                payload.put("loadTesting", true);
-                Future<Map<?,?>> future = executor.submit(() -> routeService.sendRequestWithoutRetry(payload, url));
-                futureList.add(future);
-            }
-        }
 
-        for(Future<Map<?,?>> future: futureList) {
-            try {
-                future.get();
-            } catch(Exception ex) {
-                ex.printStackTrace();
-                Map<String, Object> errorDetails = constructErrorObject(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorDetails);
-            }
-        }
+        // run send request in thread as we don't want to block main thread
+        Thread thread = new Thread(){
+            public void run(){
+                ExecutorService executor = Executors.newFixedThreadPool(totalConcurrent);
+                List<Future<Map<?,?>>> futureList = new ArrayList<>();
 
-        log.info("Load test ended");
+                int rounds = totalRequest / totalConcurrent;
+                for (int j= 0; j < rounds ; j++) {
+                    for(int i=0; i<totalConcurrent; i++) {
+                        Map<String, Object> payload = new HashMap<>();
+                        payload.put("game", "Mobile Legends");
+                        payload.put("gamerID", "GYUTDTE");
+                        payload.put("points", 20);
+                        payload.put("loadTesting", true);
+                        Future<Map<?,?>> future = executor.submit(() -> routeService.sendRequestWithoutRetry(payload, url));
+                        futureList.add(future);
+                    }
+                }
+
+                for(Future<Map<?,?>> future: futureList) {
+                    try {
+                        future.get();
+                    } catch(Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+
+                log.info("Load test ended");
+            }
+        };
+        thread.start();
+
         return ResponseEntity.status(HttpStatus.OK).build();
 
 

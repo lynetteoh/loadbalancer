@@ -24,22 +24,25 @@ public class GlobalRouteUtil {
     // keep track of sequence
     public static LinkedList<String> queue = new LinkedList<>();
 
+    // temporary remove host so that no request will go to this host
     public void tempRemoveInactiveHost(String hostName) throws Exception{
         if (activePod.containsKey(hostName)) {
             activePod.put(hostName, false);
         }
     }
 
+    // permanently remove host
     public void removeInactiveHost(String hostName) throws Exception{
         activePod.remove(hostName);
     }
-    
+
     public void addNewHost(String hostName) throws Exception {
         activePod.put(hostName, true);
         queue.add(hostName);
 
     }
 
+    // find pod that is healthy
     public String getActivePod() {
         String host = "";
         for (int i = 0; i < queue.size(); i++) {
@@ -64,6 +67,7 @@ public class GlobalRouteUtil {
                     host = getActivePod();
                 }
             } catch (Exception e) {
+                log.error("health check failed for: " + host);
                 activePod.put(host, false);
             }
         }

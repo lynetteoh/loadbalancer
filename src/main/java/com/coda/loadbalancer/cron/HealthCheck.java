@@ -34,7 +34,7 @@ public class HealthCheck {
 
     @Scheduled(cron = "*/10 * * * * *")
     public void onSchedule() {
-        //health check endpoint
+        //run health check every 10 seconds
         this.execute();
 
     }
@@ -45,6 +45,7 @@ public class HealthCheck {
             List<String> inactivePod = new ArrayList<>();
             for(String url: activePod.keySet()){
                 try {
+                    // send request to health endpoint to make sur4e pod it is up
                     ResponseEntity<Object> responseEntity=restTemplate.getForEntity(url + "/actuator/health", Object.class);
                     if (!responseEntity.getStatusCode().equals(HttpStatus.OK)) {
                         inactivePod.add(url);
@@ -54,6 +55,7 @@ public class HealthCheck {
                 }
             }
 
+            // remove inactive pod
             for (String podUrl: inactivePod) {
                     globalRouteUtil.removeInactiveHost(podUrl);
             }
