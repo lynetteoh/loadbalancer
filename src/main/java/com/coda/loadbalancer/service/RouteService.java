@@ -49,16 +49,20 @@ public class RouteService {
     }
 
 
-    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
-    private Map<?,?> sendRequest(Map<String, Object> payload, String host) throws Exception {
-        String url = host + "/v1/echo";
+    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 100))
+    public Map<?,?> sendRequest(Map<String, Object> payload, String host) throws Exception {
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(url, payload, Map.class);
-            return response.getBody();
+            return sendRequestWithoutRetry(payload, host);
         } catch (Exception e) {
             log.error("Error occurred while sending request " + e.getCause());
             throw e;
         }
+    }
+
+    public Map<?,?> sendRequestWithoutRetry(Map<String, Object> payload, String host) throws Exception {
+        String url = host + "/v1/echo";
+        ResponseEntity<Map> response = restTemplate.postForEntity(url, payload, Map.class);
+        return response.getBody();
     }
 
     @Recover
