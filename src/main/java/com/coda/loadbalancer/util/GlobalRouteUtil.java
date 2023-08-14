@@ -57,7 +57,6 @@ public class GlobalRouteUtil {
                     // ignore inactive host
                     host = "";
                 }
-                \
             }
         }
 
