@@ -36,8 +36,10 @@ public class RouteService {
         log.info("Active host: " + host);
         try{
             return sendRequest(payload, host);
-        } catch(HttpServerErrorException e) {
-            globalRouteUtil.tempRemoveInactiveHost(host);
+        } catch(Exception e) {
+            if (e.getMessage().contains("Read timed out") || e.getMessage().contains("Connection refused") || e.getMessage().contains("Connect timed out")) {
+                globalRouteUtil.tempRemoveInactiveHost(host);
+            }
             throw e;
         }
 
@@ -49,26 +51,15 @@ public class RouteService {
     }
 
 
-    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 100))
     public Map<?,?> sendRequest(Map<String, Object> payload, String host) throws Exception {
         try {
-            return sendRequestWithoutRetry(payload, host);
+            String url = host + "/v1/echo";
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, payload, Map.class);
+            return response.getBody();
         } catch (Exception e) {
             log.error("Error occurred while sending request " + e.getCause());
             throw e;
         }
     }
 
-    public Map<?,?> sendRequestWithoutRetry(Map<String, Object> payload, String host) throws Exception {
-        String url = host + "/v1/echo";
-        ResponseEntity<Map> response = restTemplate.postForEntity(url, payload, Map.class);
-        return response.getBody();
-    }
-
-    @Recover
-    public void retryExhaustHandling(HttpServerErrorException e) {
-        // Log the error
-        log.error("Unable to reach host: ", e);
-        throw e;
-    }
 }

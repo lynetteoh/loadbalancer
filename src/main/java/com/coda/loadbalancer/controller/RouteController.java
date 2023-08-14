@@ -84,7 +84,7 @@ public class RouteController {
                         payload.put("gamerID", "GYUTDTE");
                         payload.put("points", 20);
                         payload.put("loadTesting", true);
-                        Future<Map<?,?>> future = executor.submit(() -> routeService.sendRequestWithoutRetry(payload, url));
+                        Future<Map<?,?>> future = executor.submit(() -> routeService.sendRequest(payload, url));
                         futureList.add(future);
                     }
                 }
