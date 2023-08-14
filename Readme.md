@@ -4,6 +4,13 @@
 ## Description
 This is a spring boot application that route request to registered instances on a ‘round robin’ basis.
 
+## FAQ
+1. How would the load balancer handle it if one of the application APIs goes down?
+Health check is done on an interval of 10 second. Inactive instance is removed from the queue.
+Before a request is fired to an active instance, a check is done to make sure the instance is active. 
+
+2. How would the load balancer handle it if one of the application APIs starts to go slowly?
+The application remove the instance from the queue and stop sending request to the host until the application is healthy again
 
 ## Instruction to run: 
 1. docker build . -t loadbalancer
