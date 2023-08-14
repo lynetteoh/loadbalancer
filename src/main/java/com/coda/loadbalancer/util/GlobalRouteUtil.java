@@ -11,6 +11,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Component
 @Slf4j
@@ -22,7 +23,7 @@ public class GlobalRouteUtil {
     // keep track of hosts
     public static Map<String, Boolean> activePod = new ConcurrentHashMap<>();
     // keep track of sequence
-    public static LinkedList<String> queue = new LinkedList<>();
+    public static ConcurrentLinkedQueue<String> queue = new ConcurrentLinkedQueue<>();
 
     // temporary remove host so that no request will go to this host
     public void tempRemoveInactiveHost(String hostName) throws Exception{
@@ -46,7 +47,7 @@ public class GlobalRouteUtil {
     public String getActivePod() {
         String host = "";
         for (int i = 0; i < queue.size(); i++) {
-            host = queue.pop();
+            host = queue.poll();
             // check if pop is active
             // if active, add back to queue
             if (activePod.containsKey(host)) {
