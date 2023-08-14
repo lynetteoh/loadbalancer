@@ -24,7 +24,7 @@ export default function () {
   });
   const headers = { 'Content-Type': 'application/json'};
   const res = http.post('http://host.docker.internal:8888/v1/route', payload, {headers});
-  console.log(res.status);
+//   console.log(res.status);
 
   check(res, {
     'Post status is 200': (r) => res.status === 200,
