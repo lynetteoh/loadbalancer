@@ -53,7 +53,11 @@ public class GlobalRouteUtil {
                 if (activePod.get(host)) {
                     queue.add(host);
                     break;
+                } else {
+                    // ignore inactive host
+                    host = "";
                 }
+                \
             }
         }
 
