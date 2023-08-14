@@ -26,3 +26,5 @@ The application remove the instance from the queue and stop sending request to t
 http://localhost:<port>/swagger-ui/index.html
 http://localhost:<port>/actuator/health
 
+Time taken to complete: 10 hours 
+
